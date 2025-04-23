@@ -1,14 +1,14 @@
 import tensorflow.compat.v1 as tf
-tf.disable_eager_execution()  # 필수! TF 1.x 방식 사용 가능하게 만듦
+tf.disable_eager_excution() 
 import keras
-import pandas as pd
+
 
 # Model Parameters
 learning_rate = 0.001
 num_epochs = 10
 batch_size = 100
 
-# Load MNIST dataset
+# Load MNIST dataset using Keras datasets API
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
 # Normalize and preprocess data
@@ -20,16 +20,16 @@ y_train = tf.keras.utils.to_categorical(y_train, 10)
 y_test = tf.keras.utils.to_categorical(y_test, 10)
 
 # Network Parameters
-n_input = 784
+n_input = 784  # MNIST data input (28*28 pixels)
 n_hidden1 = 512
 n_hidden2 = 256
-n_classes = 10
+n_classes = 10  # MNIST total classes (0-9 digits)
 
-# Placeholders
+# Placeholders for input and output
 X = tf.placeholder(tf.float32, [None, n_input])
 Y = tf.placeholder(tf.float32, [None, n_classes])
 
-# Weights & Biases
+# Weights and biases initialization
 weights = {
     'h1': tf.Variable(tf.random_normal([n_input, n_hidden1])),
     'h2': tf.Variable(tf.random_normal([n_hidden1, n_hidden2])),
@@ -42,34 +42,36 @@ biases = {
     'out': tf.Variable(tf.random_normal([n_classes]))
 }
 
-# Model
+# Create model
 def multilayer_perceptron(x):
     layer_1 = tf.nn.relu(tf.add(tf.matmul(x, weights['h1']), biases['b1']))
     layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, weights['h2']), biases['b2']))
-    return tf.matmul(layer_2, weights['out']) + biases['out']
+    out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
+    return out_layer
 
 # Construct model
 logits = multilayer_perceptron(X)
 
-# Loss & Optimizer
-loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=Y))
+# Define loss and optimizer
+loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(
+    logits=logits, labels=Y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 train_op = optimizer.minimize(loss_op)
 
-# Accuracy
+# Evaluate model
 correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(Y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-# Init
+# Initialize variables
 init = tf.global_variables_initializer()
-total_batch = x_train.shape[0] // batch_size
+total_batch = x_train.shape[0]//batch_size
 
-# Dataset pipeline
+# Create a Dataset object for batching & batch size iterator generation
 dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size)
 iterator = tf.data.make_initializable_iterator(dataset)
 next_batch = iterator.get_next()
 
-# Session
+# Start Training
 with tf.Session() as sess:
     sess.run(init)
     sess.run(iterator.initializer)
@@ -78,23 +80,31 @@ with tf.Session() as sess:
         avg_loss = 0.
         for i in range(total_batch):
             batch_x, batch_y = sess.run(next_batch)
+            # training logic here...
             _, l = sess.run([train_op, loss_op], feed_dict={X: batch_x, Y: batch_y})
             avg_loss += l / total_batch
 
+        
+        # Display logs per epoch
         acc = sess.run(accuracy, feed_dict={X: x_test, Y: y_test})
-        print("Epoch: %02d Loss: %.4f Accuracy: %.4f%%" % (epoch+1, avg_loss, acc * 100))
+        print("Epoch:", '%02d' % (epoch+1), "Loss:", "{:.4f}".format(avg_loss), "Accuracy:", "{:.4f}".format(acc)+"%")
+
+        # Re-initialize iterator for next epoch (essential!)
         sess.run(iterator.initializer)
 
-    print("Final Test Accuracy: %.4f%%" % (sess.run(accuracy, feed_dict={X: x_test, Y: y_test}) * 100))
-    print("\nTensorflow:", tf.__version__)
-
-    # 학생 정보 출력
+    # Calculate accuracy for MNIST test images
+    print("Final Test Accuracy:", sess.run(accuracy, feed_dict={X: x_test, Y: y_test}),"%")
+    print()
+    print("Tensorflow:",tf._version_)
+    
     data = {
-        '이름': ['최서영'],
-        '학번': [2315737],
-        '학과': ['인공지능공학부']
+    '이름': ['김병규'],
+    '학번': [12345],
+    '학과': ['인공지능공학부']
     }
-    df = pd.DataFrame(data)
-    print("\n", df, "\n")
 
+    print()
+    df = pd.DataFrame(data)
+    print(df)  
+    print() 
     
