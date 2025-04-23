@@ -1,5 +1,6 @@
 import tensorflow.compat.v1 as tf
 tf.disable_eager_excution() 
+import pandas as pd 
 import keras
 
 
